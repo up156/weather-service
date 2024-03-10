@@ -51,9 +51,9 @@ public class WeatherStation {
             List<String> result = new ArrayList<>(List.of("\uD83E\uDD99 Температура  сейчас: "
                             + (Math.round(Double.parseDouble(main.get("temp").toString()) * 10) / 10.0) + "°",
                     getEmoji(weather.get("icon").toString()) + " На улице " + weather.get("description"),
-                    "☀" + "☀" + "☀" + " Восход солнца: " + convertEpochToLocalTime(sys.get("sunrise").toString()),
-                    "\uD83C\uDF1D\uD83C\uDF1D\uD83C\uDF1D ",
-                    "Заход солнца: " + convertEpochToLocalTime(sys.get("sunset").toString()), "", "",
+                    "☀" + "☀" + "☀" + " Восход солнца: " + convertEpochToStringLocalTime(sys.get("sunrise").toString()),
+                    "\uD83C\uDF1D\uD83C\uDF1D\uD83C\uDF1D " +
+                            "Заход солнца: " + convertEpochToStringLocalTime(sys.get("sunset").toString()), "", "",
                     "⚡⚡", "", ""));
 
             org.json.simple.JSONObject objectForecast = (org.json.simple.JSONObject) parser.parse(forecast);
@@ -131,6 +131,15 @@ public class WeatherStation {
         return Instant.ofEpochSecond(Long.parseLong(epoch))
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
+
+    }
+
+    private String convertEpochToStringLocalTime(String epoch) {
+
+        return Instant.ofEpochSecond(Long.parseLong(epoch))
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+                .format(DateTimeFormatter.ofPattern("HH:mm dd/MM"));
 
     }
 
