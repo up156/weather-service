@@ -8,6 +8,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @WebServlet("/weather")
 @Slf4j
@@ -15,7 +17,10 @@ public class MainServlet extends HttpServlet {
 
     private final WeatherStation weatherStation;
 
+    private final PostgresRepository postgresRepository;
+
     public MainServlet() {
+        this.postgresRepository = new PostgresRepository();
         this.weatherStation = new WeatherStation();
     }
 
@@ -50,10 +55,20 @@ public class MainServlet extends HttpServlet {
 
         printWriter.println("<b>Погода в городе: " + city + "<br />" + "<br /> + </b>");
 
-        for (String s : weatherStation.getWeather(city, days)) {
+        List<String> weatherReply = weatherStation.getWeather(city, days);
+        for (String s : weatherReply) {
             printWriter.println(s + "<br />");
         }
+        saveToDB(city, days, weatherReply);
         printWriter.close();
 
+    }
+
+    private void saveToDB(String city, Integer days, List<String> reply) {
+
+        reply = reply.stream().filter(s -> !s.isEmpty()).collect(Collectors.toList());
+
+        postgresRepository.saveResponse(city, days, reply.subList(0, 5).toString().trim(),
+                reply.subList(7, reply.size()).toString().trim());
     }
 }
