@@ -1,18 +1,18 @@
 package org.example.service;
 
+import jakarta.persistence.EntityManager;
 import org.example.entity.Weather;
-import org.example.util.HibernateSessionFactoryUtil;
-import org.hibernate.Session;
-import org.hibernate.Transaction;
+
+import static jakarta.persistence.Persistence.createEntityManagerFactory;
+
 
 public class WeatherService {
 
     public void save(Weather weather) {
-        Session session = HibernateSessionFactoryUtil.getSessionFactory().openSession();
-        Transaction transaction = session.beginTransaction();
-        session.persist(weather);
-        transaction.commit();
-        session.flush();
-        session.close();
+        EntityManager entityManager = createEntityManagerFactory("Weather").createEntityManager();
+        entityManager.getTransaction().begin();
+        entityManager.persist(weather);
+        entityManager.getTransaction().commit();
+        entityManager.close();
     }
 }
