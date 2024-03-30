@@ -27,7 +27,7 @@ public class WeatherService {
     }
 
     public void saveWeather(String city, Integer days, List<String> reply) {
-        saveToDBWithJDBC(city, days, reply);
+        saveToDBWithHibernate(city, days, reply);
     }
 
     private void saveToDBWithJDBC(String city, Integer days, List<String> reply) {
