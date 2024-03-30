@@ -1,9 +1,9 @@
 package org.example.service;
 
 import jakarta.persistence.EntityManager;
-import org.example.WeatherStation;
+import org.example.client.WeatherClient;
 import org.example.entity.Weather;
-import org.example.jdbc.PostgresRepository;
+import org.example.jdbc.JDBCClient;
 
 import java.time.Instant;
 import java.util.List;
@@ -13,17 +13,17 @@ import static jakarta.persistence.Persistence.createEntityManagerFactory;
 
 public class WeatherService {
 
-    private final PostgresRepository postgresRepository;
+    private final JDBCClient JDBCClient;
 
-    private final WeatherStation weatherStation;
+    private final WeatherClient weatherClient;
 
     public WeatherService() {
-        this.postgresRepository = new PostgresRepository();
-        this.weatherStation = new WeatherStation();
+        this.JDBCClient = new JDBCClient();
+        this.weatherClient = new WeatherClient();
     }
 
     public List<String> getWeather(String city, Integer days) {
-        return weatherStation.getWeather(city, days);
+        return weatherClient.getWeather(city, days);
     }
 
     public void saveWeather(String city, Integer days, List<String> reply) {
@@ -32,7 +32,7 @@ public class WeatherService {
 
     private void saveToDBWithJDBC(String city, Integer days, List<String> reply) {
 
-        postgresRepository.saveResponse(city, days, reply.subList(0, 5).toString().trim(),
+        JDBCClient.saveResponse(city, days, reply.subList(0, 5).toString().trim(),
                 reply.subList(7, reply.size()).toString().trim());
     }
 

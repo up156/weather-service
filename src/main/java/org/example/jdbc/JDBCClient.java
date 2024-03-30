@@ -4,7 +4,7 @@ package org.example.jdbc;
 import java.sql.*;
 import java.time.LocalDate;
 
-public class PostgresRepository {
+public class JDBCClient {
 
     private final String url = "jdbc:postgresql://localhost:5432/app_db";
 

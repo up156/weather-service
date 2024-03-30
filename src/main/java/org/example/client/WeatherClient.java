@@ -1,4 +1,4 @@
-package org.example;
+package org.example.client;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -24,13 +24,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class WeatherStation {
+public class WeatherClient {
 
     private final static String key = "";
     private final static String WEATHER_NOW = "https://api.openweathermap.org/data/2.5/weather?q=&lang=ru&units=metric&appid=" + key;
     private final static String WEATHER_FORECAST = "https://api.openweathermap.org/data/2.5/forecast?q=&lang=ru&units=metric&appid=" + key;
 
-    public WeatherStation() {
+    public WeatherClient() {
     }
 
     public List<String> getWeather(String city, Integer days) {
