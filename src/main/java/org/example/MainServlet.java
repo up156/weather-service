@@ -10,7 +10,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @WebServlet("/weather")
 @Slf4j
@@ -57,8 +56,6 @@ public class MainServlet extends HttpServlet {
         for (String s : weatherReply) {
             printWriter.println(s + "<br />");
         }
-        weatherReply = weatherReply.stream().filter(s -> !s.isEmpty()).collect(Collectors.toList());
-        weatherService.saveWeather(city, days, weatherReply);
         printWriter.close();
     }
 }

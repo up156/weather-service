@@ -5,7 +5,9 @@ import org.example.client.WeatherClient;
 import org.example.entity.Weather;
 import org.example.jdbc.JDBCClient;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 import static jakarta.persistence.Persistence.createEntityManagerFactory;
@@ -17,13 +19,30 @@ public class WeatherService {
 
     private final WeatherClient weatherClient;
 
+    private final EntityManager entityManager;
+
     public WeatherService() {
+
         this.JDBCClient = new JDBCClient();
         this.weatherClient = new WeatherClient();
+        this.entityManager = createEntityManagerFactory("Weather").createEntityManager();
     }
 
     public List<String> getWeather(String city, Integer days) {
-        return weatherClient.getWeather(city, days);
+        Weather result = queryForWeather().stream()
+                .filter(e -> e.getCity().equals(city) && e.getDays().equals(days))
+                .findFirst().orElse(null);
+
+        List<String> reply;
+        if (result == null) {
+            reply = weatherClient.getWeather(city, days);
+            saveWeather(city, days, reply);
+        } else {
+            reply = new ArrayList<>();
+                reply.add(result.getCurrentWeather());
+                reply.add(result.getForecast());
+        }
+        return reply;
     }
 
     public void saveWeather(String city, Integer days, List<String> reply) {
@@ -32,8 +51,7 @@ public class WeatherService {
 
     private void saveToDBWithJDBC(String city, Integer days, List<String> reply) {
 
-        JDBCClient.saveResponse(city, days, reply.subList(0, 5).toString().trim(),
-                reply.subList(7, reply.size()).toString().trim());
+        JDBCClient.saveResponse(city, days, reply.get(0), reply.get(1));
     }
 
     private void saveToDBWithHibernate(String city, Integer days, List<String> reply) {
@@ -42,10 +60,20 @@ public class WeatherService {
         weather.setCity(city);
         weather.setDateTime(Instant.now());
         weather.setDays(days);
-        weather.setCurrentWeather(reply.subList(0, 5).toString().trim());
-        weather.setForecast(reply.subList(7, reply.size()).toString().trim());
+        weather.setCurrentWeather(reply.get(0));
+        weather.setForecast(reply.get(1));
         save(weather);
 
+    }
+
+    public List<Weather> queryForWeather() {
+        Instant time = Instant.now().minus(Duration.ofMinutes(25));
+        List<?> weather = entityManager.createQuery(
+                "SELECT weather from Weather weather where weather.dateTime >:time")
+                .setParameter("time", time)
+                .getResultList();
+
+        return weather.stream().map(o -> (Weather) o).toList();
     }
 
     private void save(Weather weather) {
@@ -55,6 +83,4 @@ public class WeatherService {
         entityManager.getTransaction().commit();
         entityManager.close();
     }
-
-
 }

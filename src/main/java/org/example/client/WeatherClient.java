@@ -1,5 +1,6 @@
 package org.example.client;
 
+import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+@Slf4j
 public class WeatherClient {
 
     private final static String key = "";
@@ -35,60 +37,72 @@ public class WeatherClient {
 
     public List<String> getWeather(String city, Integer days) {
 
+        log.info("WeatherClient started for city: {} and days: {}", city, days);
+        List<String> result = new ArrayList<>();
         try {
             List<String> weatherReply = getWeatherReply(city);
             if (weatherReply.isEmpty()) {
                 return Collections.singletonList("нет информации для этого города");
             }
 
-            String now = weatherReply.get(0);
-            String forecast = weatherReply.get(1);
-            JSONParser parser = new JSONParser();
-            org.json.simple.JSONObject object = (org.json.simple.JSONObject) parser.parse(now);
-            org.json.simple.JSONObject main = (org.json.simple.JSONObject) object.get("main");
-            org.json.simple.JSONObject sys = (org.json.simple.JSONObject) object.get("sys");
-            org.json.simple.JSONObject weather = (JSONObject) ((JSONArray) object.get("weather")).get(0);
-            List<String> result = new ArrayList<>(List.of("\uD83E\uDD99 Температура  сейчас: "
-                            + (Math.round(Double.parseDouble(main.get("temp").toString()) * 10) / 10.0) + "°",
-                    getEmoji(weather.get("icon").toString()) + " На улице " + weather.get("description"),
-                    "☀" + "☀" + "☀" + " Восход солнца: " + convertEpochToStringLocalTime(sys.get("sunrise").toString()),
-                    "\uD83C\uDF1D\uD83C\uDF1D\uD83C\uDF1D " +
-                            "Заход солнца: " + convertEpochToStringLocalTime(sys.get("sunset").toString()), "", "",
-                    "⚡⚡", "", ""));
+            result.add(getWeatherNow(weatherReply.get(0)));
+            result.add(getWeatherForecast(weatherReply.get(1), days));
 
-            org.json.simple.JSONObject objectForecast = (org.json.simple.JSONObject) parser.parse(forecast);
-            org.json.simple.JSONArray list = (org.json.simple.JSONArray) objectForecast.get("list");
-            LocalDate temp = LocalDate.now();
-            result.add("Прогноз на: " + temp.format(DateTimeFormatter.ofPattern("dd/MM")));
-            temp = temp.plus(1, ChronoUnit.DAYS);
-
-            for (int j = 0; j < 40; j++) {
-
-                org.json.simple.JSONObject weatherForecast = (JSONObject) ((JSONArray) ((JSONObject) list.get(j)).get("weather")).get(0);
-                Long dt = (Long) ((JSONObject) list.get(j)).get("dt");
-                LocalDateTime dateOfForecast = convertEpochToLocalTime(dt.toString());
-                if (dateOfForecast.isBefore(LocalDateTime.now()
-                        .plus(days, ChronoUnit.DAYS).plus(4, ChronoUnit.HOURS))) {
-                    if (dateOfForecast.toLocalDate().isEqual(ChronoLocalDate.from(temp))) {
-                        result.add("");
-                        result.add("Прогноз на: " + dateOfForecast.format(DateTimeFormatter.ofPattern("dd/MM")));
-                        result.add("");
-                        temp = temp.plus(1, ChronoUnit.DAYS);
-                    }
-                    org.json.simple.JSONObject mainForecast = (JSONObject) ((JSONObject) list.get(j)).get("main");
-                    String string = dateOfForecast.format(DateTimeFormatter.ofPattern("HH:mm dd/MM")) + " - " +
-                            getEmoji(weatherForecast.get("icon").toString()) + " " +
-                            (Math.round(Float.parseFloat(mainForecast.get("temp").toString()) * 10)) / 10.0 +
-                            "°" + " " + weatherForecast.get("description") + "\r\n";
-                    result.add(string);
-                }
-            }
-            System.out.println(result);
+            log.info("WeatherClient get result: {}", result);
             return result;
         } catch (ParseException e) {
             e.printStackTrace();
             return Collections.singletonList("что-то сломалось");
         }
+    }
+
+    private String getWeatherNow(String now) throws ParseException {
+        JSONParser parser = new JSONParser();
+        org.json.simple.JSONObject object = (org.json.simple.JSONObject) parser.parse(now);
+        org.json.simple.JSONObject main = (org.json.simple.JSONObject) object.get("main");
+        org.json.simple.JSONObject sys = (org.json.simple.JSONObject) object.get("sys");
+        org.json.simple.JSONObject weather = (JSONObject) ((JSONArray) object.get("weather")).get(0);
+        return "\uD83E\uDD99 Температура  сейчас: " +
+                Math.round(Double.parseDouble(main.get("temp").toString()) * 10) / 10.0 +
+                "°<br />" +
+                getEmoji(weather.get("icon").toString()) + " На улице " + weather.get("description") + "<br />" +
+                "☀" + "☀" + "☀" + " Восход солнца: " +
+                convertEpochToStringLocalTime(sys.get("sunrise").toString()) + "<br />" +
+                "\uD83C\uDF1D\uD83C\uDF1D\uD83C\uDF1D Заход солнца: " + convertEpochToStringLocalTime(sys.get("sunset").toString()) + "<br />" +
+                "<br />" + "⚡⚡" + "<br />";
+    }
+
+    private String getWeatherForecast(String forecast, Integer days) throws ParseException {
+        JSONParser parser = new JSONParser();
+
+        org.json.simple.JSONObject objectForecast = (org.json.simple.JSONObject) parser.parse(forecast);
+        org.json.simple.JSONArray list = (org.json.simple.JSONArray) objectForecast.get("list");
+        LocalDate temp = LocalDate.now();
+        StringBuilder result = new StringBuilder("Прогноз на: " + temp.format(DateTimeFormatter.ofPattern("dd/MM")) + "<br />");
+        temp = temp.plus(1, ChronoUnit.DAYS);
+
+        for (int j = 0; j < 40; j++) {
+
+            org.json.simple.JSONObject weatherForecast = (JSONObject) ((JSONArray) ((JSONObject) list.get(j)).get("weather")).get(0);
+            Long dt = (Long) ((JSONObject) list.get(j)).get("dt");
+            LocalDateTime dateOfForecast = convertEpochToLocalTime(dt.toString());
+            if (dateOfForecast.isBefore(LocalDateTime.now()
+                    .plus(days, ChronoUnit.DAYS).plus(4, ChronoUnit.HOURS))) {
+                if (dateOfForecast.toLocalDate().isEqual(ChronoLocalDate.from(temp))) {
+                    result.append("<br />");
+                    result.append("Прогноз на: ").append(dateOfForecast.format(DateTimeFormatter.ofPattern("dd/MM")));
+                    result.append("<br />");
+                    temp = temp.plus(1, ChronoUnit.DAYS);
+                }
+                org.json.simple.JSONObject mainForecast = (JSONObject) ((JSONObject) list.get(j)).get("main");
+                result.append(dateOfForecast.format(DateTimeFormatter.ofPattern("HH:mm dd/MM")))
+                        .append(" - ")
+                        .append(getEmoji(weatherForecast.get("icon").toString()))
+                        .append(" ").append((Math.round(Float.parseFloat(mainForecast.get("temp").toString()) * 10)) / 10.0)
+                        .append("°").append(" ").append(weatherForecast.get("description")).append("<br />");
+            }
+        }
+        return result.toString();
     }
 
     private List<String> getWeatherReply(String city) {
