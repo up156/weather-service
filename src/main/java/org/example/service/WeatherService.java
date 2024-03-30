@@ -1,18 +1,60 @@
 package org.example.service;
 
 import jakarta.persistence.EntityManager;
+import org.example.WeatherStation;
 import org.example.entity.Weather;
+import org.example.jdbc.PostgresRepository;
+
+import java.time.Instant;
+import java.util.List;
 
 import static jakarta.persistence.Persistence.createEntityManagerFactory;
 
 
 public class WeatherService {
 
-    public void save(Weather weather) {
+    private final PostgresRepository postgresRepository;
+
+    private final WeatherStation weatherStation;
+
+    public WeatherService() {
+        this.postgresRepository = new PostgresRepository();
+        this.weatherStation = new WeatherStation();
+    }
+
+    public List<String> getWeather(String city, Integer days) {
+        return weatherStation.getWeather(city, days);
+    }
+
+    public void saveWeather(String city, Integer days, List<String> reply) {
+        saveToDBWithJDBC(city, days, reply);
+    }
+
+    private void saveToDBWithJDBC(String city, Integer days, List<String> reply) {
+
+        postgresRepository.saveResponse(city, days, reply.subList(0, 5).toString().trim(),
+                reply.subList(7, reply.size()).toString().trim());
+    }
+
+    private void saveToDBWithHibernate(String city, Integer days, List<String> reply) {
+
+        Weather weather = new Weather();
+        weather.setCity(city);
+        weather.setDateTime(Instant.now());
+        weather.setDays(days);
+        weather.setCurrentWeather(reply.subList(0, 5).toString().trim());
+        weather.setForecast(reply.subList(7, reply.size()).toString().trim());
+        save(weather);
+
+    }
+
+    private void save(Weather weather) {
         EntityManager entityManager = createEntityManagerFactory("Weather").createEntityManager();
         entityManager.getTransaction().begin();
         entityManager.persist(weather);
         entityManager.getTransaction().commit();
         entityManager.close();
     }
+
+
 }
